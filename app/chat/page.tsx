@@ -1,7 +1,7 @@
 "use client";
 
-// 添加这一行 - 防止静态预渲染
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 import { ChatRoom } from "@/components/chat-room";
 
