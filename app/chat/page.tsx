@@ -1,5 +1,8 @@
 "use client";
 
+// 添加这一行 - 防止静态预渲染
+export const dynamic = "force-dynamic";
+
 import { ChatRoom } from "@/components/chat-room";
 
 export default function ChatPage() {
@@ -17,4 +20,3 @@ export default function ChatPage() {
     </div>
   );
 }
-
