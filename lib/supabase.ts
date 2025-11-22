@@ -3,14 +3,19 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl) {
-  throw new Error("NEXT_PUBLIC_SUPABASE_URL is not defined. Please set it in your .env.local file.");
-}
-if (!supabaseAnonKey) {
-  throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not defined. Please set it in your .env.local file.");
+// 只在客户端运行时验证，构建时跳过
+let supabase: any = null;
+
+if (typeof window !== "undefined") {
+  // 客户端环境
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn("Supabase credentials not configured");
+  } else {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+  }
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export { supabase };
 
 // 消息表结构
 export interface ChatMessage {
@@ -24,6 +29,11 @@ export interface ChatMessage {
 
 // 获取所有消息
 export async function getMessages(): Promise<ChatMessage[]> {
+  if (!supabase) {
+    console.error("Supabase not initialized");
+    return [];
+  }
+
   const { data, error } = await supabase
     .from("messages")
     .select("*")
@@ -40,6 +50,11 @@ export async function getMessages(): Promise<ChatMessage[]> {
 
 // 发送消息
 export async function sendMessage(message: ChatMessage): Promise<ChatMessage | null> {
+  if (!supabase) {
+    console.error("Supabase not initialized");
+    return null;
+  }
+
   const { data, error } = await supabase
     .from("messages")
     .insert([message])
@@ -56,6 +71,11 @@ export async function sendMessage(message: ChatMessage): Promise<ChatMessage | n
 
 // 订阅消息更新
 export function subscribeToMessages(callback: (message: ChatMessage) => void) {
+  if (!supabase) {
+    console.error("Supabase not initialized");
+    return () => {};
+  }
+
   const channel = supabase
     .channel("messages")
     .on(
@@ -65,7 +85,7 @@ export function subscribeToMessages(callback: (message: ChatMessage) => void) {
         schema: "public",
         table: "messages",
       },
-      (payload) => {
+      (payload: any) => {
         callback(payload.new as ChatMessage);
       }
     )
@@ -75,4 +95,3 @@ export function subscribeToMessages(callback: (message: ChatMessage) => void) {
     supabase.removeChannel(channel);
   };
 }
-
